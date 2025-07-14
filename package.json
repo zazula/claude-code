@@ -4,7 +4,6 @@
   "description": "Patched version of Claude Code with string overflow protection",
   "main": "claude-patched.js",
   "bin": {
-    "claude": "./claude-patched.js",
     "claude-patched": "./claude-patched.js"
   },
   "scripts": {
