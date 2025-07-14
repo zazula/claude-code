@@ -1,0 +1,29 @@
+{
+  "name": "@zazula/claude-code",
+  "version": "1.0.51-patched.1",
+  "description": "Patched version of Claude Code with string overflow protection",
+  "main": "claude-patched.js",
+  "bin": {
+    "claude": "./claude-patched.js",
+    "claude-patched": "./claude-patched.js"
+  },
+  "scripts": {
+    "install": "npm install -g @anthropic-ai/claude-code@1.0.51"
+  },
+  "keywords": [
+    "claude",
+    "ai",
+    "coding",
+    "assistant",
+    "patched"
+  ],
+  "author": "zazula",
+  "license": "MIT",
+  "dependencies": {
+    "@anthropic-ai/claude-code": "1.0.51"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zazula/claude-code.git"
+  }
+}
