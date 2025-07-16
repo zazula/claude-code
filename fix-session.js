@@ -164,15 +164,17 @@ async function createFixedSession(sessionPath, lines, issues, toolUseMap, autoFi
               fixedLines.push(resultLine.raw);
             }
           } else {
-            // Create synthetic error result
+            // Create synthetic error result with proper structure
             const errorResult = {
-              role: 'user',
-              content: [{
-                type: 'tool_result',
-                tool_use_id: content.id,
-                is_error: true,
-                content: 'Error: Tool execution was interrupted or failed. This is a synthetic error added during session repair.'
-              }]
+              message: {
+                role: 'user',
+                content: [{
+                  type: 'tool_result',
+                  tool_use_id: content.id,
+                  is_error: true,
+                  content: 'Error: Tool execution was interrupted or failed. This is a synthetic error added during session repair.'
+                }]
+              }
             };
             fixedLines.push(JSON.stringify(errorResult));
             console.log(`  Added synthetic error result for tool ${content.id}`);

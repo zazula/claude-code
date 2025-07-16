@@ -106,10 +106,16 @@ function main() {
   
   try {
     const { execSync } = require('child_process');
-    // First use deep cleaner to remove problematic tool IDs
-    const deepCleanerPath = path.join(__dirname, 'deep-clean-session.js');
+    // First use deep cleaner v2 to remove problematic tool IDs
+    const deepCleanerPath = path.join(__dirname, 'deep-clean-session-v2.js');
     if (fs.existsSync(deepCleanerPath) && fs.existsSync(sessionPath)) {
       execSync(`node "${deepCleanerPath}" --auto "${sessionPath}"`, { stdio: 'pipe' });
+    } else {
+      // Fallback to v1 if v2 doesn't exist
+      const v1Path = path.join(__dirname, 'deep-clean-session.js');
+      if (fs.existsSync(v1Path) && fs.existsSync(sessionPath)) {
+        execSync(`node "${v1Path}" --auto "${sessionPath}"`, { stdio: 'pipe' });
+      }
     }
     
     // Then run standard fix-session for any remaining issues
@@ -129,8 +135,17 @@ function main() {
     return true;
   });
   
-  // Spawn claude with -r and the session ID, and -i for interactive mode
-  const args = ['-r', sessionId, '-i', ...additionalArgs];
+  // Check if interactive flag already exists
+  const hasInteractiveFlag = additionalArgs.some(arg => 
+    arg === '-i' || arg === '--interactive'
+  );
+  
+  // Spawn claude with -r and the session ID, and -i for interactive mode if not already present
+  const args = ['-r', sessionId];
+  if (!hasInteractiveFlag) {
+    args.push('-i');
+  }
+  args.push(...additionalArgs);
   
   console.log(`\n🚀 Resuming with: claude ${args.join(' ')}\n`);
   console.log('⚠️  Note: Due to a bug in Claude v1.0.53, sessions may fail to resume.');
