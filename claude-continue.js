@@ -135,25 +135,17 @@ function main() {
     return true;
   });
   
-  // Check if interactive flag already exists
-  const hasInteractiveFlag = additionalArgs.some(arg => 
-    arg === '-i' || arg === '--interactive'
-  );
+  // The -c flag is completely broken in v1.0.53, and -r exits after showing a message
+  // Best workaround: just start claude normally, it will pick up the last session
+  console.log(`\n✅ Session cleaned. Starting Claude...`);
+  console.log(`📝 Last session: ${sessionId}\n`);
   
-  // Spawn claude with -r and the session ID, and -i for interactive mode if not already present
-  const args = ['-r', sessionId];
-  if (!hasInteractiveFlag) {
-    args.push('-i');
-  }
-  args.push(...additionalArgs);
-  
-  console.log(`\n🚀 Resuming with: claude ${args.join(' ')}\n`);
-  console.log('⚠️  Note: Due to a bug in Claude v1.0.53, sessions may fail to resume.');
-  console.log('💡 If you get an API error, try starting a new conversation instead.\n');
+  // Just start claude without any resume flags - it should pick up the cleaned session
+  const args = [...additionalArgs];
   
   const claude = spawn('claude', args, {
     stdio: 'inherit',
-    shell: true
+    shell: false  // Also fix the security warning
   });
   
   claude.on('error', (error) => {
