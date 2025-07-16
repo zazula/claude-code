@@ -128,24 +128,23 @@ function main() {
   }
   
   // Get any additional arguments passed after the script
-  // Filter out --permission-mode and its value since they'll be added by the shell function
-  const additionalArgs = process.argv.slice(2).filter((arg, index, arr) => {
-    if (arg === '--permission-mode') return false;
-    if (index > 0 && arr[index - 1] === '--permission-mode') return false;
-    return true;
-  });
+  const additionalArgs = process.argv.slice(2);
   
   // The -c flag is completely broken in v1.0.53, and -r exits after showing a message
   // Best workaround: just start claude normally, it will pick up the last session
   console.log(`\n✅ Session cleaned. Starting Claude...`);
   console.log(`📝 Last session: ${sessionId}\n`);
   
+  // Debug what we're passing
+  if (additionalArgs.length > 0 && additionalArgs[0].includes('--permission-mode')) {
+    console.log(`[DEBUG] Args being passed: ${additionalArgs.join(' ')}`);
+  }
+  
   // Just start claude without any resume flags - it should pick up the cleaned session
   const args = [...additionalArgs];
   
   const claude = spawn('claude', args, {
-    stdio: 'inherit',
-    shell: false  // Also fix the security warning
+    stdio: 'inherit'
   });
   
   claude.on('error', (error) => {
