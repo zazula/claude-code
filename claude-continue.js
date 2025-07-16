@@ -126,6 +126,8 @@ function main() {
   const args = ['-r', sessionId, ...additionalArgs];
   
   console.log(`\n🚀 Resuming with: claude ${args.join(' ')}\n`);
+  console.log('⚠️  Note: Due to a bug in Claude v1.0.53, sessions may fail to resume.');
+  console.log('💡 If you get an API error, try starting a new conversation instead.\n');
   
   const claude = spawn('claude', args, {
     stdio: 'inherit',
