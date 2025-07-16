@@ -69,6 +69,7 @@ class SafeOutputBuffer {
 // Find the original Claude Code executable
 function findClaudeCode() {
   const possiblePaths = [
+    '/opt/homebrew/bin/claude-original',
     '/opt/homebrew/bin/claude',
     '/usr/local/bin/claude',
     path.join(process.env.HOME || '', '.npm-global', 'bin', 'claude'),
