@@ -91,19 +91,48 @@ function findClaudeCode() {
 
 // Check if session needs repair
 async function checkAndRepairSession(args) {
-  // Check if this is a resume command
+  // Check if this is a resume or continue command
   const resumeIndex = args.findIndex(arg => arg === '-r' || arg === '--resume');
-  if (resumeIndex === -1) return args;
+  const continueIndex = args.findIndex(arg => arg === '-c' || arg === '--continue');
   
-  // Get session ID
-  let sessionId = args[resumeIndex + 1];
-  if (!sessionId || sessionId.startsWith('-')) {
-    // Interactive resume, can't pre-check
-    return args;
+  if (resumeIndex === -1 && continueIndex === -1) return args;
+  
+  // Get session ID or find the most recent for -c
+  let sessionId;
+  let sessionPath;
+  
+  if (continueIndex !== -1) {
+    // For -c/--continue, we need to find the most recent session
+    // This requires looking up the current directory's last session
+    const cwd = process.cwd();
+    try {
+      // Read the config to find the last session for this directory
+      const configPath = path.join(process.env.HOME || process.env.USERPROFILE, '.claude.json');
+      if (fs.existsSync(configPath)) {
+        const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+        const projectKey = Object.keys(config.projects || {}).find(key => 
+          path.resolve(key) === path.resolve(cwd)
+        );
+        if (projectKey && config.projects[projectKey].lastSessionId) {
+          sessionId = config.projects[projectKey].lastSessionId;
+        }
+      }
+    } catch (e) {
+      // Can't find last session, let Claude handle it
+      return args;
+    }
+  } else {
+    // For -r/--resume, get the session ID from args
+    sessionId = args[resumeIndex + 1];
+    if (!sessionId || sessionId.startsWith('-')) {
+      // Interactive resume, can't pre-check
+      return args;
+    }
   }
   
+  if (!sessionId) return args;
+  
   // Find session file
-  let sessionPath;
   try {
     const result = execSync(`find ~/.claude/projects -name "*${sessionId}*" -type f`, { encoding: 'utf8' });
     const matches = result.trim().split('\n').filter(Boolean);
