@@ -129,8 +129,8 @@ function main() {
     return true;
   });
   
-  // Spawn claude with -r and the session ID
-  const args = ['-r', sessionId, ...additionalArgs];
+  // Spawn claude with -r and the session ID, and -i for interactive mode
+  const args = ['-r', sessionId, '-i', ...additionalArgs];
   
   console.log(`\n🚀 Resuming with: claude ${args.join(' ')}\n`);
   console.log('⚠️  Note: Due to a bug in Claude v1.0.53, sessions may fail to resume.');
