@@ -1,135 +1,77 @@
-# Claude Code Patched
+# Claude Code Wrapper with Session Repair
 
-A patched version of @anthropic-ai/claude-code that prevents `RangeError: Invalid string length` crashes when processing large outputs.
+This wrapper enhances Claude Code with two important fixes:
 
-## Problem Solved
+1. **String Overflow Protection**: Prevents crashes from large outputs
+2. **Session Repair**: Automatically fixes broken sessions on resume
 
-The original Claude Code crashes with this error when tool outputs exceed JavaScript's maximum string length (~1GB):
+## The Session Resume Problem
 
+Claude Code can fail to resume sessions with the error:
 ```
-RangeError: Invalid string length
-    at Socket.<anonymous> (file:///opt/homebrew/lib/node_modules/@anthropic-ai/claude-code/cli.js:627:8993)
+API Error: 400 {"type":"error","error":{"type":"invalid_request_error","message":"messages.93: `tool_use` ids were found without `tool_result` blocks immediately after: toolu_014F6R5piBxVrJdLbwTHigJW, toolu_01JMxCAMPpQrn576vDkjCfDn"}}
 ```
 
-## Solution
-
-This wrapper intercepts output streams and:
-- ⚠️  **Warns** at 10MB output
-- 🛑 **Truncates** at 50MB to prevent crashes  
-- 📊 **Reports** statistics when truncation occurs
-- 💡 **Suggests** alternatives for large data
+This happens when:
+- Tool results with errors are stored in the session
+- API error messages or other messages appear between a tool_use and its tool_result
+- The Claude API requires tool_result blocks to immediately follow tool_use blocks
 
 ## Installation
 
 ```bash
-# Install from this repository
-npm install -g @zazula/claude-code
-
-# Or install locally
-cd claude-code-wrapper
-npm install -g .
+npm install
+npm link
 ```
 
-## Usage
-
-Use exactly like the original Claude Code:
-
-```bash
-# All normal Claude Code commands work
-claude "Help me fix this code"
-claude --version
-claude --help
-
-# The wrapper automatically protects against large outputs
-claude "Generate a huge amount of text"  # Won't crash!
-```
+The wrapper will replace the `claude` command with a protected version.
 
 ## Features
 
-### Automatic Protection
+### Automatic Session Repair
+- Detects problematic sessions on resume
+- Reorders tool_result messages to immediately follow tool_use blocks
+- Creates synthetic error results for missing tool_results
+- Backs up original sessions before repair
+
+### String Overflow Protection
 - Monitors output size in real-time
-- Prevents string overflow crashes
-- Graceful degradation with clear messages
+- Truncates at 50MB to prevent crashes
+- Shows warnings at 10MB threshold
 
-### User Feedback
-- Early warnings for large outputs (>10MB)
-- Clear truncation messages
-- Statistics on output size
-- Helpful tips for handling large data
+### Shell Snapshot Management
+- Automatically creates required directories (~/.claude/shell-snapshots)
+- Cleans up stale lock files older than 24 hours
+- Prevents "ENOENT: no such file or directory" errors
 
-### Compatibility
-- Drop-in replacement for original Claude Code
-- Same command-line interface
-- Same functionality, just safer
+## Manual Session Repair
 
-## Example Output
+You can manually repair a session:
 
 ```bash
-$ claude "Generate a very large dataset"
-🛡️  Claude Code with string overflow protection
-⚠️  Large output detected (15MB). Consider using file output for very large results.
-❌ Output truncated at 50MB to prevent Claude Code crash.
+# By session ID
+node fix-session.js fcef873a-5c7e-4b6e-93a8-62b5432347a0
 
-📊 Output Statistics:
-   Total output: 50MB
-   Truncated: Yes
+# By file path
+node fix-session.js ~/.claude/projects/path/to/session.jsonl
 
-💡 Tips:
-   - Use file output for large results
-   - Process data in smaller chunks
-   - Consider streaming approaches
+# Auto-fix without prompts
+node fix-session.js --auto session.jsonl
 ```
 
 ## How It Works
 
-1. **Wrapper Process**: Spawns the original Claude Code as a child process
-2. **Stream Monitoring**: Intercepts stdout/stderr streams
-3. **Size Tracking**: Monitors cumulative output size
-4. **Safe Truncation**: Stops at safe limits with clear messaging
-5. **Graceful Termination**: Kills child process if needed to prevent crashes
+1. **Session Detection**: When you use `claude -r <session-id>`, the wrapper checks the session
+2. **Issue Detection**: Scans for tool_use blocks without immediately following tool_result blocks
+3. **Automatic Repair**: Reorders messages to satisfy API requirements
+4. **Transparent Resume**: Passes control to Claude Code with the repaired session
 
 ## Technical Details
 
-- **Warning Threshold**: 10MB
-- **Hard Limit**: 50MB  
-- **Buffer Strategy**: Chunked accumulation
-- **Termination**: SIGTERM for graceful shutdown
-- **Compatibility**: Node.js 18+
-
-## File Structure
-
-```
-claude-code-wrapper/
-├── package.json          # Package configuration
-├── claude-patched.js     # Main wrapper script
-├── README.md            # This documentation
-└── node_modules/        # Dependencies
-```
-
-## Development
-
-To modify the wrapper:
-
-1. Edit `claude-patched.js`
-2. Adjust constants:
-   - `MAX_OUTPUT_SIZE`: Hard limit (default: 50MB)
-   - `WARNING_THRESHOLD`: Warning point (default: 10MB)
-3. Test with large outputs
-4. Reinstall: `npm install -g .`
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
-
-## License
-
-MIT License - see LICENSE file for details.
-
-## Acknowledgments
-
-- Original Claude Code by Anthropic
-- Inspired by the need for more robust large-output handling
+The session repair algorithm:
+1. Parses JSONL session files line by line
+2. Tracks all tool_use and tool_result pairs
+3. Identifies non-sequential results (with intervening messages)
+4. Reorders the session to place tool_results immediately after their tool_use
+5. Creates synthetic error results for orphaned tool_uses
+6. Backs up and replaces the original session file
