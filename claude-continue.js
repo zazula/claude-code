@@ -95,7 +95,7 @@ function main() {
   }
   
   // Always fix the session before resuming to handle chained session issues
-  console.log('🔧 Checking session for issues...');
+  console.log('🔧 Deep cleaning session for problematic tool IDs...');
   const sessionPath = path.join(
     process.env.HOME || process.env.USERPROFILE,
     '.claude',
@@ -106,12 +106,19 @@ function main() {
   
   try {
     const { execSync } = require('child_process');
+    // First use deep cleaner to remove problematic tool IDs
+    const deepCleanerPath = path.join(__dirname, 'deep-clean-session.js');
+    if (fs.existsSync(deepCleanerPath) && fs.existsSync(sessionPath)) {
+      execSync(`node "${deepCleanerPath}" --auto "${sessionPath}"`, { stdio: 'pipe' });
+    }
+    
+    // Then run standard fix-session for any remaining issues
     const fixerPath = path.join(__dirname, 'fix-session.js');
     if (fs.existsSync(fixerPath) && fs.existsSync(sessionPath)) {
       execSync(`node "${fixerPath}" --auto "${sessionPath}"`, { stdio: 'pipe' });
     }
   } catch (e) {
-    console.error('⚠️  Warning: Could not check/fix session:', e.message);
+    console.error('⚠️  Warning: Could not clean/fix session:', e.message);
   }
   
   // Get any additional arguments passed after the script

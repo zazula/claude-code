@@ -210,12 +210,18 @@ async function checkSessionForIssues(sessionPath) {
 // Repair session by reordering tool results
 async function repairSession(sessionPath) {
   try {
-    // Use our fix-session script with --auto flag
+    // First use deep cleaner to remove problematic tool IDs
+    const deepCleanerPath = path.join(__dirname, 'deep-clean-session.js');
+    if (fs.existsSync(deepCleanerPath)) {
+      execSync(`node "${deepCleanerPath}" --auto "${sessionPath}"`, { stdio: 'pipe' });
+    }
+    
+    // Then use standard fix-session script for any remaining issues
     const fixerPath = path.join(__dirname, 'fix-session.js');
     if (fs.existsSync(fixerPath)) {
       execSync(`node "${fixerPath}" --auto "${sessionPath}"`, { stdio: 'pipe' });
-      return true;
     }
+    return true;
   } catch (e) {
     console.error('Failed to repair session:', e.message);
   }
